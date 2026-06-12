@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import { Loader2, CheckCircle2, XCircle, Phone, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import type { Call, CallStatus } from "@/types/calls";
+import type { Call, CallStatus, SortCallsBy, SortOrder } from "@/types/calls";
 
 interface StatusBadgeProps {
   status: CallStatus;
@@ -42,9 +42,27 @@ function formatDuration(seconds: number | null): string {
 interface CallsTableProps {
   calls: Call[];
   onRowClick: (call: Call) => void;
+
+  // TASK 2: sorting props from CallsPage
+  sortBy: SortCallsBy;
+  sortOrder: SortOrder;
+  onSortChange: (column: SortCallsBy) => void;
 }
 
-export function CallsTable({ calls, onRowClick }: CallsTableProps) {
+export function CallsTable({
+  calls,
+  onRowClick,
+  sortBy,
+  sortOrder,
+  onSortChange,
+}: CallsTableProps) {
+  // TASK 2: show arrow beside the active sorted column
+  function getSortLabel(column: SortCallsBy) {
+    if (sortBy !== column) return "";
+
+    return sortOrder === "asc" ? " ↑" : " ↓";
+  }
+
   if (calls.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -65,15 +83,52 @@ export function CallsTable({ calls, onRowClick }: CallsTableProps) {
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border">
-            <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground">Phone</th>
-            <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground">Caller</th>
-            <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground">Status</th>
-            <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground">Label</th>
-            <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground">Duration</th>
-            <th className="text-left py-3 px-4 text-xs font-medium text-muted-foreground">Started At</th>
+            <th
+              className="text-left py-3 px-4 text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground"
+              onClick={() => onSortChange("phone_number")}
+            >
+              Phone{getSortLabel("phone_number")}
+            </th>
+
+            <th
+              className="text-left py-3 px-4 text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground"
+              onClick={() => onSortChange("caller_name")}
+            >
+              Caller{getSortLabel("caller_name")}
+            </th>
+
+            <th
+              className="text-left py-3 px-4 text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground"
+              onClick={() => onSortChange("status")}
+            >
+              Status{getSortLabel("status")}
+            </th>
+
+            <th
+              className="text-left py-3 px-4 text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground"
+              onClick={() => onSortChange("label")}
+            >
+              Label{getSortLabel("label")}
+            </th>
+
+            <th
+              className="text-left py-3 px-4 text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground"
+              onClick={() => onSortChange("duration_seconds")}
+            >
+              Duration{getSortLabel("duration_seconds")}
+            </th>
+
+            <th
+              className="text-left py-3 px-4 text-xs font-medium text-muted-foreground cursor-pointer select-none hover:text-foreground"
+              onClick={() => onSortChange("started_at")}
+            >
+              Started At{getSortLabel("started_at")}
+            </th>
+
             <th className="py-3 px-4" />
           </tr>
         </thead>
+
         <tbody className="divide-y divide-border">
           {calls.map((call) => (
             <tr
@@ -82,10 +137,13 @@ export function CallsTable({ calls, onRowClick }: CallsTableProps) {
               className="group hover:bg-muted/50 transition-colors cursor-pointer"
             >
               <td className="py-3 px-4 font-mono text-xs text-foreground">{call.phone_number}</td>
+
               <td className="py-3 px-4 text-foreground">{call.caller_name ?? "—"}</td>
+
               <td className="py-3 px-4">
                 <StatusBadge status={call.status} />
               </td>
+
               <td className="py-3 px-4">
                 {call.label ? (
                   <span className="inline-flex items-center rounded-md px-2 py-1 text-xs font-medium border border-border bg-muted text-foreground">
@@ -95,12 +153,15 @@ export function CallsTable({ calls, onRowClick }: CallsTableProps) {
                   <span className="text-muted-foreground text-xs">—</span>
                 )}
               </td>
+
               <td className="py-3 px-4 tabular-nums text-muted-foreground">
                 {formatDuration(call.duration_seconds)}
               </td>
+
               <td className="py-3 px-4 tabular-nums text-muted-foreground">
                 {format(new Date(call.started_at), "MMM d, HH:mm:ss")}
               </td>
+
               <td className="py-3 px-4">
                 <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
               </td>

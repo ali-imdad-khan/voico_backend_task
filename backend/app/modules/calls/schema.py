@@ -5,7 +5,18 @@ from typing import Optional
 
 from sqlmodel import Column, DateTime, Field, SQLModel
 
+class SortingOrder(str, Enum): # Sorting order for listing calls 
+    asc = "asc"
+    desc = "desc"
 
+class SortCallsBy(str, Enum): # Filtering fields for listing calls
+    phone_number = "phone_number"
+    caller_name = "caller_name"
+    duration_seconds = "duration_seconds"
+    status = "status"
+    label = "label"
+    started_at = "started_at"
+    created_at = "created_at"
 class CallStatus(str, Enum):
     in_progress = "in_progress"
     success = "success"
@@ -35,6 +46,7 @@ class Call(SQLModel, table=True):
     status: CallStatus = Field(default=CallStatus.in_progress, index=True)
     summary: Optional[str] = Field(default=None)
     label: Optional[CallLabel] = Field(default=None)
+    notes: Optional[str] = Field(default=None) # TASK 1: added the notes field for annotation of the call
     started_at: datetime = Field(
         default_factory=datetime.utcnow,
         sa_column=Column(DateTime, nullable=False),
@@ -73,11 +85,13 @@ class CallResponse(SQLModel):
     status: CallStatus
     summary: Optional[str]
     label: Optional[CallLabel]
+    notes: Optional[str] = None #TASK 1
     started_at: datetime
     ended_at: Optional[datetime]
     created_at: datetime
     updated_at: datetime
     raw_transcript: Optional[str]
+    
 
 
 class CallCounts(SQLModel):

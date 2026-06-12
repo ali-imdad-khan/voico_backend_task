@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { RefreshCw, Phone } from "lucide-react";
+import { RefreshCw, Phone, X } from "lucide-react";
 import { callsApi } from "@/services/api";
-import type { Call, CallStatus } from "@/types/calls";
+import type { Call, CallStatus, SortCallsBy, SortOrder } from "@/types/calls";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CallsTable } from "./CallsTable";
@@ -24,13 +24,43 @@ export function CallsPage() {
   const [page, setPage] = useState(1);
   const [selectedCall, setSelectedCall] = useState<Call | null>(null);
 
+  // TASK 2: filter state
+  const [callerName, setCallerName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [label, setLabel] = useState("");
+  const [minDuration, setMinDuration] = useState("");
+  const [maxDuration, setMaxDuration] = useState("");
+
+  // TASK 2: sorting state
+  const [sortBy, setSortBy] = useState<SortCallsBy>("created_at");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+
   const statusFilter = activeTab === "all" ? undefined : activeTab;
 
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
-    queryKey: ["calls", statusFilter, page, PAGE_SIZE],
+    queryKey: [
+      "calls",
+      statusFilter,
+      callerName,
+      phoneNumber,
+      label,
+      minDuration,
+      maxDuration,
+      sortBy,
+      sortOrder,
+      page,
+      PAGE_SIZE,
+    ],
     queryFn: () =>
       callsApi.list({
         status: statusFilter,
+        caller_name: callerName || undefined,
+        phone_number: phoneNumber || undefined,
+        label: label || undefined,
+        min_duration_seconds: minDuration ? Number(minDuration) : undefined,
+        max_duration_seconds: maxDuration ? Number(maxDuration) : undefined,
+        sort_by: sortBy,
+        sort_order: sortOrder,
         page,
         page_size: PAGE_SIZE,
       }),
@@ -41,6 +71,39 @@ export function CallsPage() {
     setActiveTab(tab);
     setPage(1);
   }
+
+  // TASK 2: clear all filters and reset sorting
+  function clearFilters() {
+    setCallerName("");
+    setPhoneNumber("");
+    setLabel("");
+    setMinDuration("");
+    setMaxDuration("");
+    setSortBy("created_at");
+    setSortOrder("desc");
+    setPage(1);
+  }
+
+  // TASK 2: change sorting when a column header is clicked
+  function handleSortChange(column: SortCallsBy) {
+    if (sortBy === column) {
+      setSortOrder((currentOrder) => (currentOrder === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+
+    setPage(1);
+  }
+
+  const hasActiveFilters =
+    callerName ||
+    phoneNumber ||
+    label ||
+    minDuration ||
+    maxDuration ||
+    sortBy !== "created_at" ||
+    sortOrder !== "desc";
 
   return (
     <div className="min-h-screen bg-background">
@@ -120,6 +183,151 @@ export function CallsPage() {
             </div>
           </div>
 
+          {/* TASK 2: filter inputs */}
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-3 px-6 py-4 border-b border-border">
+            <input
+              className="rounded-md border border-border px-3 py-2 text-sm"
+              placeholder="Caller name"
+              value={callerName}
+              onChange={(event) => {
+                setCallerName(event.target.value);
+                setPage(1);
+              }}
+            />
+
+            <input
+              className="rounded-md border border-border px-3 py-2 text-sm"
+              placeholder="Phone number"
+              value={phoneNumber}
+              onChange={(event) => {
+                setPhoneNumber(event.target.value);
+                setPage(1);
+              }}
+            />
+
+            <input
+              className="rounded-md border border-border px-3 py-2 text-sm"
+              placeholder="Label"
+              value={label}
+              onChange={(event) => {
+                setLabel(event.target.value);
+                setPage(1);
+              }}
+            />
+
+            <input
+              className="rounded-md border border-border px-3 py-2 text-sm"
+              placeholder="Min duration"
+              type="number"
+              min="0"
+              value={minDuration}
+              onChange={(event) => {
+                setMinDuration(event.target.value);
+                setPage(1);
+              }}
+            />
+
+            <input
+              className="rounded-md border border-border px-3 py-2 text-sm"
+              placeholder="Max duration"
+              type="number"
+              min="0"
+              value={maxDuration}
+              onChange={(event) => {
+                setMaxDuration(event.target.value);
+                setPage(1);
+              }}
+            />
+          </div>
+
+          {/* TASK 2: active filter chips */}
+          {hasActiveFilters && (
+            <div className="flex flex-wrap items-center gap-2 px-6 py-3 border-b border-border bg-muted/30">
+              {callerName && (
+                <button
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-xs"
+                  onClick={() => {
+                    setCallerName("");
+                    setPage(1);
+                  }}
+                >
+                  Caller: {callerName}
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+
+              {phoneNumber && (
+                <button
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-xs"
+                  onClick={() => {
+                    setPhoneNumber("");
+                    setPage(1);
+                  }}
+                >
+                  Phone: {phoneNumber}
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+
+              {label && (
+                <button
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-xs"
+                  onClick={() => {
+                    setLabel("");
+                    setPage(1);
+                  }}
+                >
+                  Label: {label}
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+
+              {minDuration && (
+                <button
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-xs"
+                  onClick={() => {
+                    setMinDuration("");
+                    setPage(1);
+                  }}
+                >
+                  Min: {minDuration}s
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+
+              {maxDuration && (
+                <button
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-xs"
+                  onClick={() => {
+                    setMaxDuration("");
+                    setPage(1);
+                  }}
+                >
+                  Max: {maxDuration}s
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+
+              {(sortBy !== "created_at" || sortOrder !== "desc") && (
+                <button
+                  className="inline-flex items-center gap-1 rounded-full border border-border bg-white px-3 py-1 text-xs"
+                  onClick={() => {
+                    setSortBy("created_at");
+                    setSortOrder("desc");
+                    setPage(1);
+                  }}
+                >
+                  Sort: {sortBy} {sortOrder}
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+
+              <Button variant="ghost" size="sm" onClick={clearFilters}>
+                Clear all
+              </Button>
+            </div>
+          )}
+
           <CardContent className="p-0">
             {isError ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -142,15 +350,16 @@ export function CallsPage() {
               <CallsTable
                 calls={data?.data ?? []}
                 onRowClick={setSelectedCall}
+                sortBy={sortBy}
+                sortOrder={sortOrder}
+                onSortChange={handleSortChange}
               />
             )}
           </CardContent>
 
           {/* Pagination */}
           {data && data.total_pages > 1 && (
-            <div
-              className="flex items-center justify-between px-6 py-4 border-t border-border"
-            >
+            <div className="flex items-center justify-between px-6 py-4 border-t border-border">
               <p className="text-sm text-muted-foreground">
                 Page {data.page} of {data.total_pages}{" "}
                 <span className="opacity-60">({data.total} total)</span>

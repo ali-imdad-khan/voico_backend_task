@@ -21,3 +21,9 @@ export const callsApi = {
     return data;
   },
 };
+
+export async function updateCallNotes(id: string, notes: string | null){
+  // This updates the notes for some specific call with id
+  const response = await apiClient.patch(`/calls/${id}/notes`, { notes });
+  return response.data;
+}

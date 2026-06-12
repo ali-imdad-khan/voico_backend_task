@@ -1,7 +1,12 @@
 import { format } from "date-fns";
 import { X, Phone, User, Clock, Calendar, FileText, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+
 import { StatusBadge } from "./CallsTable";
 import type { Call } from "@/types/calls";
+import { updateCallNotes } from "@/services/api";
+import { Button } from "@/components/ui/button";
 
 interface CallDetailDrawerProps {
   call: Call | null;
@@ -36,6 +41,33 @@ function formatDuration(seconds: number | null): string {
 }
 
 export function CallDetailDrawer({ call, onClose }: CallDetailDrawerProps) {
+  const queryClient = useQueryClient();
+
+  //check if the notes field is editable
+  const [isEditingNotes, setIsEditingNotes] = useState(false);
+
+  //save the textarea value while notes are being edited
+  const [notesValue, setNotesValue] = useState("");
+
+  //save the updated notes to the backend
+  const updateNotes = useMutation({
+    mutationFn: (notes: string | null) => {
+      if (!call) {
+        throw new Error("No call selected");
+      }
+
+      return updateCallNotes(call.id, notes);
+    },
+
+    onSuccess: () => {
+      // refresh all calls queries so the saved notes are synced
+      queryClient.invalidateQueries({ queryKey: ["calls"] });
+
+      // close the textarea after save
+      setIsEditingNotes(false);
+    },
+  });
+
   if (!call) return null;
 
   return (
@@ -100,6 +132,58 @@ export function CallDetailDrawer({ call, onClose }: CallDetailDrawerProps) {
               value={format(new Date(call.ended_at), "PPpp")}
             />
           )}
+
+          <DetailRow
+            icon={<FileText className="h-4 w-4" />}
+            label="Notes"
+            value={
+              isEditingNotes ? (
+                <div className="space-y-2">
+                  {/* Textarea shown while editing notes */}
+                  <textarea
+                    value={notesValue}
+                    onChange={(event) => setNotesValue(event.target.value)}
+                    rows={4}
+                    className="w-full rounded-md border border-border p-2 text-sm"
+                  />
+
+                  <div className="flex gap-2">
+                    {/* Save notes to backend */}
+                    <Button
+                      size="sm"
+                      onClick={() => updateNotes.mutate(notesValue)}
+                      disabled={updateNotes.isPending}
+                    >
+                      Save
+                    </Button>
+
+                    {/* Cancel editing and restore the original notes */}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setNotesValue(call.notes ?? "");
+                        setIsEditingNotes(false);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className="cursor-pointer rounded-md border border-border p-2 hover:bg-muted"
+                  onClick={() => {
+                    // Load the current notes into the textarea before editing
+                    setNotesValue(call.notes ?? "");
+                    setIsEditingNotes(true);
+                  }}
+                >
+                  {call.notes || "Click to add notes"}
+                </div>
+              )
+            }
+          />
         </div>
 
         {/* AI Summary */}

@@ -111,6 +111,13 @@ There are four features to implement. Some tasks require adding new endpoints an
 
 **What to build:** Add a `notes` field to the `Call` model — a nullable free-text field. Create an Alembic migration for it. Add a `PATCH /api/calls/{id}/notes` endpoint that accepts a JSON body `{"notes": "..."}` and persists it. On the frontend, make the notes field editable inline inside the call detail drawer: clicking on it should turn it into a textarea, and saving should call the new endpoint and update the UI immediately.
 
+
+### Task 1 Solution
+- Added a nullable `notes` field to the `Call` model.
+- Implemented `PATCH /api/calls/{call_id}/notes`.
+- Added inline note editing in the Call Detail Drawer.
+- Notes are updated immediately via React Query cache invalidation.
+
 ---
 
 ### Task 2 — Advanced Filtering & Search
@@ -123,6 +130,26 @@ On the **backend**, extend `GET /api/calls` to accept additional query parameter
 
 On the **frontend**, add a filter UI that lets users add and remove filters. Each active filter should be visible as a removable chip or tag. Column headers should be clickable to sort ascending/descending (one active sort at a time). All active filters and sort state should be reflected in the API request in real time.
 
+### Task 2 Solution
+
+#### Backend
+Added support for:
+- Partial caller name search
+- Partial phone number search
+- Label filtering
+- Min/max duration filtering
+- Column sorting (ascending/descending)
+
+#### Frontend
+Added:
+- Caller name filter
+- Phone number filter
+- Label filter
+- Duration filters
+- Active filter chips
+- Clear filters functionality
+- Clickable sortable table headers
+
 ---
 
 ### Task 3 — Stale Call Auto-Expiry
@@ -133,6 +160,17 @@ On the **frontend**, add a filter UI that lets users add and remove filters. Eac
 
 The interval (10 min) and the stale threshold (30 min) must be configurable via environment variables — add them to `.env` and `app/core/config.py` so they are easy to adjust for testing without touching the code.
 
+### Task 3 Solution
+- Added a background task to automatically expire stale `in_progress` calls.
+- Calls older than the configured threshold are marked as `failed`.
+- Uses a single batch update for efficiency.
+- Logs the number of expired calls on each run.
+- Added configurable environment variables:
+
+```env
+STALE_CALL_INTERVAL_SECONDS=600
+STALE_CALL_THRESHOLD_MINUTES=30
+```
 ---
 
 ### Task 4 — Webhook AI Integration
@@ -157,3 +195,13 @@ The interval (10 min) and the stale threshold (30 min) must be configurable via 
    }
    ```
 3. Hit **Execute** — the response will show the updated call with the generated summary and label.
+
+### Task 4 Solution
+- Implemented `POST /api/webhook/call`.
+- Updates call status, duration, transcript, and end time.
+- Integrated OpenAI (`gpt-4o-mini`) for:
+  - Call summary generation
+  - Call label classification
+- OpenAI failures are logged without interrupting webhook processing.
+- Summary and label remain `null` if enrichment fails.
+
